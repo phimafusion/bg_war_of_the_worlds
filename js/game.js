@@ -45,6 +45,7 @@ export class GameState {
         
         // Stationary weapons (like the 95t Gun)
         this.stationaryWeapons = []; // list of { type: '95t_gun', zoneName }
+        this.activeBattlePlans = []; // list of active plans in battles
 
         this.logHistory = [];
         
