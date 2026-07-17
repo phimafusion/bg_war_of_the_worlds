@@ -550,21 +550,29 @@ export class GameState {
 
     // Helper functions for event cards logic
     evacuateRefugeesLogic() {
+        const moves = [];
         for (const [name, zone] of Object.entries(this.map.zones)) {
             if (zone.refugees1 > 0 || zone.refugees2 > 0) {
-                // Move refugees closer to nearest harbor site
-                // For simplicity, shift them to adjacent zone that has a harbor or leads to it
                 const neighbors = this.map.getNeighbors(name);
                 if (neighbors.length > 0) {
                     const harborNeighbor = neighbors.find(n => this.isHarborZone(n));
                     const target = harborNeighbor || neighbors[0];
-                    this.map.zones[target].refugees1 += zone.refugees1;
-                    this.map.zones[target].refugees2 += zone.refugees2;
-                    zone.refugees1 = 0;
-                    zone.refugees2 = 0;
+                    moves.push({
+                        from: name,
+                        to: target,
+                        r1: zone.refugees1,
+                        r2: zone.refugees2
+                    });
                 }
             }
         }
+        
+        moves.forEach(m => {
+            this.map.zones[m.from].refugees1 -= m.r1;
+            this.map.zones[m.from].refugees2 -= m.r2;
+            this.map.zones[m.to].refugees1 += m.r1;
+            this.map.zones[m.to].refugees2 += m.r2;
+        });
     }
 
     isHarborZone(name) {
@@ -603,7 +611,6 @@ export class GameState {
     }
 
     addRandomBattlePlan() {
-        // Battle Plans deck mockup inside game state
         if (!this.activeBattlePlans) this.activeBattlePlans = [];
         const plans = [
             { id: "surprise_shot", name: "Surprise Shot (+2 Würfel)", used: false },
@@ -611,6 +618,17 @@ export class GameState {
         ];
         const randomPlan = plans[Math.floor(Math.random() * plans.length)];
         this.activeBattlePlans.push({ ...randomPlan, id: `${randomPlan.id}_${Date.now()}` });
+    }
+
+    buyBattlePlan(type) {
+        const cost = type === "random" ? 5 : 10;
+        if (this.pp < cost) {
+            this.log("Nicht genügend PP für einen Schlachtplan.", "system");
+            return;
+        }
+        this.pp -= cost;
+        this.addRandomBattlePlan();
+        this.log(`Schlachtplan erworben. -${cost} PP.`, "human");
     }
 }
 

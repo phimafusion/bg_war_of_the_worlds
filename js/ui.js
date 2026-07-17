@@ -63,6 +63,8 @@ export class UIManager {
         this.btnNextBattleStep = document.getElementById("btn-next-battle-step");
         this.customDieVisual = document.getElementById("custom-die-visual");
         this.rollReason = document.getElementById("roll-reason");
+        this.btnBuyPlanRandom = document.getElementById("btn-buy-plan-random");
+        this.btnBuyPlanChoose = document.getElementById("btn-buy-plan-choose");
 
         // Modals
         this.rulesModal = document.getElementById("rules-modal");
@@ -127,6 +129,15 @@ export class UIManager {
         this.btnActCylinder.addEventListener("click", () => this.handleInfantryAction("cylinder"));
         this.btnActEarthworks.addEventListener("click", () => this.handleInfantryAction("earthworks"));
         this.btnActPowder.addEventListener("click", () => this.handleInfantryAction("powdermill"));
+        
+        this.btnBuyPlanRandom.addEventListener("click", () => {
+            gameState.buyBattlePlan("random");
+            this.renderGame();
+        });
+        this.btnBuyPlanChoose.addEventListener("click", () => {
+            gameState.buyBattlePlan("choose");
+            this.renderGame();
+        });
 
         // Battle Steps
         this.btnNextBattleStep.addEventListener("click", () => {
@@ -265,7 +276,6 @@ export class UIManager {
                 tContainer.appendChild(indicator);
             });
             waveEl.appendChild(tContainer);
-            this.stagingList.innerHTML = ""; // wait, let's append instead
             this.stagingList.appendChild(waveEl);
         }
 
