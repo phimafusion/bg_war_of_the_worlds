@@ -2,6 +2,7 @@
  * Test Suite for 'The War of the Worlds' board game logic
  */
 import { gameState } from "../game.js";
+import { ui } from "../ui.js";
 
 export function runTests() {
     const results = [];
@@ -133,6 +134,132 @@ export function runTests() {
 
         const dist = gameState.battle.getDistance(gun, tripod);
         if (dist !== 2) throw new Error(`Entfernung zwischen C5 und C3 sollte 2 sein, war: ${dist}`);
+    });
+
+    // 6. Test Scenario Setups
+    runTest("testScenarioSetups", () => {
+        // Core setup
+        gameState.startNewGame("core");
+        if (gameState.pp !== 76) throw new Error(`Core PP Setup fehlgeschlagen: ${gameState.pp} (Erwartet 76 = 15 starting + 61 production)`);
+        if (gameState.map.zones["Scotland"].handlingMachine !== "green") throw new Error("Scotland Handling Machine sollte grün sein.");
+        if (gameState.map.zones["Wales"].handlingMachine !== "yellow") throw new Error("Wales Handling Machine sollte gelb sein.");
+        if (gameState.map.zones["Bristol"].handlingMachine !== "red") throw new Error("Bristol Handling Machine sollte rot sein.");
+        if (gameState.cylinders.length !== 1) throw new Error("Core Setup sollte mit 1 Cylinder starten.");
+
+        // Ironclads setup
+        gameState.startNewGame("ironclads");
+        if (gameState.pp !== 61) throw new Error(`Ironclads PP sollte 61 sein, war: ${gameState.pp}`);
+        if (gameState.map.zones["Scotland"].handlingMachine !== null) throw new Error("Ironclads sollte keine Handling Machines haben.");
+
+        // Uprising setup
+        gameState.startNewGame("uprising");
+        if (gameState.map.zones["Norwich"].handlingMachine !== "green") throw new Error("Uprising sollte grüne Handling Machine in Norwich haben.");
+    });
+
+    // 7. Test Devastation Table Outcomes
+    runTest("testDevastationTable", () => {
+        gameState.startNewGame("core");
+        
+        // Setup 1 Tripod wave in Leeds (starts with 6 gears)
+        gameState.waves["Leeds"] = { tripods: [{ color: "green", damaged: false }] };
+        
+        // Mock roll to yellow (-3 gears)
+        gameState.rollCustomDie = () => "yellow";
+        gameState.executeDevastationPhase();
+        
+        const leedsGears = gameState.map.zones["Leeds"].gears;
+        if (leedsGears !== 3) throw new Error(`1 Tripod + Yellow Roll sollte Gears auf 3 senken, war: ${leedsGears}`);
+    });
+
+    // 8. Test Cylinder Assembly Phase
+    runTest("testAssemblyPhase", () => {
+        gameState.startNewGame("core");
+        
+        // Setup a cylinder and handling machine in Wales (Yellow HM)
+        gameState.cylinders = [{ zoneName: "Wales", tripodsCount: 4 }];
+        gameState.map.zones["Wales"].cylinder = true;
+        gameState.map.zones["Wales"].handlingMachine = "yellow";
+
+        // Mock roll to yellow (matches HM color)
+        gameState.rollCustomDie = () => "yellow";
+        gameState.executeAssemblyPhase();
+
+        if (gameState.cylinders.length !== 0) throw new Error("Cylinder sollte montiert und aus der Liste entfernt worden sein.");
+        if (!gameState.waves["Wales"]) throw new Error("Eine aktive Welle sollte in Wales entstanden sein.");
+        if (gameState.waves["Wales"].tripods.length !== 4) throw new Error("Die Welle sollte aus 4 Tripods bestehen.");
+    });
+
+    // 9. Test Sea Battle Escape & Freighter Damage
+    runTest("testSeaBattleEscape", () => {
+        gameState.startNewGame("core");
+        
+        // Start Sea Battle: 1 Tripod (Green, range 1), 1 type-1 refugee
+        gameState.naval.startSeaBattle("Southampton", 1, 1, 0);
+
+        if (!gameState.naval.active) throw new Error("Seeschlacht sollte aktiv sein.");
+        if (gameState.naval.freighters.length !== 1) throw new Error("Flüchtlingsschiff sollte platziert sein.");
+        if (gameState.naval.tripods.length !== 1) throw new Error("Dreibeiner sollte platziert sein.");
+
+        // Move human: freighter moves B->C
+        gameState.naval.executeHumanTurn();
+        const freighterCol = gameState.naval.freighters[0].col;
+        if (freighterCol !== 2) throw new Error(`Flüchtlingsschiff sollte in Spalte C (2) sein, war: ${freighterCol}`);
+    });
+
+    // 10. Test Victory & Loss Conditions
+    runTest("testVictoryLossConditions", () => {
+        gameState.startNewGame("core");
+        
+        let gameOverTriggered = false;
+        let humanWonState = false;
+        gameState.gameOverCallback = (won, reason) => {
+            gameOverTriggered = true;
+            humanWonState = won;
+        };
+
+        // Test 1: Germs victory
+        gameState.germs = 10;
+        gameState.checkVictoryOrLoss();
+        if (!gameOverTriggered || !humanWonState) throw new Error("Biologischer Sieg (Germs >= 10) wurde nicht ausgelöst.");
+
+        // Test 2: London destroyed loss
+        gameState.reset();
+        gameState.gameOverCallback = (won, reason) => {
+            gameOverTriggered = true;
+            humanWonState = won;
+        };
+        gameState.map.zones["London"].destroyed = true;
+        gameState.checkVictoryOrLoss();
+        if (!gameOverTriggered || humanWonState) throw new Error("Verlust (London zerstört) wurde nicht ausgelöst.");
+
+        // Test 3: Flying Machine loss
+        gameState.reset();
+        gameState.gameOverCallback = (won, reason) => {
+            gameOverTriggered = true;
+            humanWonState = won;
+        };
+        gameState.fm = 4;
+        gameState.checkVictoryOrLoss();
+        if (!gameOverTriggered || humanWonState) throw new Error("Verlust (FM >= 4) wurde nicht ausgelöst.");
+    });
+
+    // 11. Test Cylinder Attacks by Infantry
+    runTest("testCylinderAttacks", () => {
+        gameState.startNewGame("core");
+        
+        // Setup cylinder in Leicester
+        gameState.cylinders = [{ zoneName: "Leicester", tripodsCount: 4 }];
+        gameState.map.zones["Leicester"].cylinder = true;
+        
+        // Mock select zone
+        ui.selectedZone = "Leicester";
+        
+        // Mock custom die roll to green (success)
+        gameState.rollCustomDie = () => "green";
+        ui.handleInfantryAction("cylinder");
+
+        const tripodCount = gameState.cylinders[0].tripodsCount;
+        if (tripodCount !== 3) throw new Error(`Erfolgreicher Infanterieangriff sollte Tripod-Anzahl auf 3 senken, war: ${tripodCount}`);
     });
 
     return results;

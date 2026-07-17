@@ -86,6 +86,7 @@ export class UIManager {
     }
 
     bindEvents() {
+        if (!this.btnStartGame) return; // Guard for non-game environments (like tests.html)
         // Start Game
         this.btnStartGame.addEventListener("click", () => {
             const activeScenario = document.querySelector(".btn-scenario.active").dataset.scenario;
@@ -196,14 +197,16 @@ export class UIManager {
 
     writeLog(msg, side) {
         // Main log
-        const logMsg = document.createElement("div");
-        logMsg.className = `log-msg ${side}`;
-        logMsg.textContent = `[Runde ${gameState.round}] ${msg}`;
-        this.logContent.appendChild(logMsg);
-        this.logContent.scrollTop = this.logContent.scrollHeight;
+        if (this.logContent) {
+            const logMsg = document.createElement("div");
+            logMsg.className = `log-msg ${side}`;
+            logMsg.textContent = `[Runde ${gameState.round}] ${msg}`;
+            this.logContent.appendChild(logMsg);
+            this.logContent.scrollTop = this.logContent.scrollHeight;
+        }
 
         // Battle log if active
-        if (gameState.battle.active || gameState.naval.active) {
+        if ((gameState.battle.active || gameState.naval.active) && this.battleLogContent) {
             const battleMsg = document.createElement("div");
             battleMsg.className = `log-msg ${side}`;
             battleMsg.textContent = msg;
@@ -217,6 +220,7 @@ export class UIManager {
     }
 
     renderGame() {
+        if (!this.hudPP) return; // Guard for non-game environments (like tests.html)
         // 1. HUD Stats
         this.hudPP.textContent = gameState.pp;
         this.hudHVp.textContent = gameState.hVp;
