@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The War of the Worlds - Solitär Brettspiel</title>
+    <!-- Steampunk & Victorian Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Share+Tech+Mono&family=Special+Elite&family=Alegreya:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div id="app">
+        <!-- SCREEN 1: Hauptmenü -->
+        <section id="screen-menu" class="screen active">
+            <div class="menu-container">
+                <h1 class="menu-title">THE WAR<br><small>of the</small><br>WORLDS</h1>
+                <p class="menu-subtitle">Solitär-Brettspiel-Digitalisierung — England 1898</p>
+                
+                <div class="menu-card">
+                    <h3>Szenario wählen</h3>
+                    <div class="scenario-list">
+                        <button class="btn-scenario active" data-scenario="core">
+                            <strong>Das Hauptspiel (Core Game)</strong>
+                            <span>Verteidige England gegen die erste Welle der Martianer.</span>
+                        </button>
+                        <button class="btn-scenario" data-scenario="ironclads">
+                            <strong>I. The Mars Ironclads</strong>
+                            <span>Keine Handling Machines, aber 5 Tripods pro Welle. Naval Battles sind kritisch!</span>
+                        </button>
+                        <button class="btn-scenario" data-scenario="uprising">
+                            <strong>II. Handling Machine Uprising</strong>
+                            <span>4 grüne Handling Machines starten. Vernichte alle, um zu gewinnen.</span>
+                        </button>
+                        <button class="btn-scenario" data-scenario="crisis">
+                            <strong>III. Refugee Crisis</strong>
+                            <span>Massive Flüchtlingsströme und erhöhter Druck auf die Häfen.</span>
+                        </button>
+                    </div>
+                    
+                    <div class="menu-actions">
+                        <button id="btn-start-game" class="btn-primary">Krieg beginnen</button>
+                        <a href="tests.html" id="btn-run-tests" class="btn-secondary">Test-Suite ausführen</a>
+                    </div>
+                </div>
+                
+                <div class="credits">
+                    <p>Design: Arnauld Della Siega & Kevin Verssen | Art: Nicolas Treil | DVG Games</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: Hauptspiel (Strategic Map & HUD) -->
+        <section id="screen-game" class="screen">
+            <!-- HUD / Top Bar -->
+            <header class="game-hud">
+                <div class="hud-item clock-container">
+                    <div class="hud-label">Phasen-Clock</div>
+                    <div class="clock-display">
+                        <span id="current-phase-name">Production Phase</span>
+                    </div>
+                </div>
+                
+                <div class="hud-item">
+                    <div class="hud-label">Produktionspunkte (PP)</div>
+                    <div class="hud-value pp-value" id="hud-pp">0</div>
+                </div>
+
+                <div class="hud-item">
+                    <div class="hud-label">Victory Points</div>
+                    <div class="hud-value-double">
+                        <span class="human-color" title="Human VP">H: <span id="hud-h-vp">0</span></span>
+                        <span class="martian-color" title="Martian VP">M: <span id="hud-m-vp">0</span></span>
+                    </div>
+                </div>
+
+                <div class="hud-item">
+                    <div class="hud-label">Germ Counter</div>
+                    <div class="hud-value germ-value" id="hud-germ">0 / 10</div>
+                </div>
+
+                <div class="hud-item">
+                    <div class="hud-label">Colonization</div>
+                    <div class="hud-value colonization-value" id="hud-colonization">0 / 10</div>
+                </div>
+
+                <div class="hud-item">
+                    <div class="hud-label">Flugmaschine (FM)</div>
+                    <div class="hud-value fm-value" id="hud-fm">0 / 4</div>
+                </div>
+                
+                <div class="hud-item actions">
+                    <button id="btn-show-rules" class="btn-hud">Regeln</button>
+                    <button id="btn-quit" class="btn-hud danger">Menü</button>
+                </div>
+            </header>
+
+            <!-- Main Layout -->
+            <div class="game-layout">
+                <!-- Left Sidebar: Phase control & purchasing -->
+                <aside class="sidebar-left">
+                    <div class="control-panel">
+                        <h2 class="panel-title">Phasen-Steuerung</h2>
+                        <div class="phase-track">
+                            <div class="phase-step active" id="phase-step-production">1. Production</div>
+                            <div class="phase-step" id="phase-step-devastation">2. Devastation</div>
+                            <div class="phase-step" id="phase-step-battle">3. Battle</div>
+                            <div class="phase-step" id="phase-step-humanAction">4. Human Action</div>
+                            <div class="phase-step" id="phase-step-escape">5. Escape</div>
+                            <div class="phase-step" id="phase-step-martianAction">6. Martian Action</div>
+                            <div class="phase-step" id="phase-step-assembly">7. Assembly</div>
+                            <div class="phase-step" id="phase-step-event">8. Event</div>
+                        </div>
+                        <button id="btn-next-phase" class="btn-next-phase">Phase beenden</button>
+                    </div>
+
+                    <!-- Shop (Active only in Production Phase) -->
+                    <div class="shop-panel" id="shop-panel">
+                        <h2 class="panel-title">Einheiten kaufen</h2>
+                        <div class="shop-grid">
+                            <button class="shop-item" data-unit="infantry" title="Infanterie (Nahkampf, Stellungen bauen)">
+                                <span class="unit-icon icon-infantry"></span>
+                                <span class="unit-name">Infanterie</span>
+                                <span class="unit-cost">10 PP</span>
+                            </button>
+                            <button class="shop-item" data-unit="cavalry" title="Kavallerie (Schnelle Bewegung, Wellen ablenken)">
+                                <span class="unit-icon icon-cavalry"></span>
+                                <span class="unit-name">Kavallerie</span>
+                                <span class="unit-cost">10 PP</span>
+                            </button>
+                            <button class="shop-item" data-unit="fieldgun" title="Feldgeschütz (Mittlere Stärke im Taktik-Kampf)">
+                                <span class="unit-icon icon-fieldgun"></span>
+                                <span class="unit-name">Feldgeschütz</span>
+                                <span class="unit-cost">15 PP</span>
+                            </button>
+                            <button class="shop-item" data-unit="siegegun" title="Belagerungskanone (Sehr stark, wirft 2 Würfel)">
+                                <span class="unit-icon icon-siegegun"></span>
+                                <span class="unit-name">Belagerungs-K.</span>
+                                <span class="unit-cost">25 PP</span>
+                            </button>
+                            <button class="shop-item" data-unit="randomharbor" title="Zufälliger Hafen (Flüchtlinge retten)">
+                                <span class="unit-icon icon-harbor"></span>
+                                <span class="unit-name">Hafen (Zufall)</span>
+                                <span class="unit-cost">5 PP</span>
+                            </button>
+                            <button class="shop-item" data-unit="chosenharbor" title="Gewählter Hafen (Gezielte Evakuierung)">
+                                <span class="unit-icon icon-harbor"></span>
+                                <span class="unit-name">Hafen (Wahl)</span>
+                                <span class="unit-cost">15 PP</span>
+                            </button>
+                        </div>
+                        <p class="shop-info">Militäreinheiten müssen in einer Zone mit einem Fabrik-Symbol platziert werden.</p>
+                    </div>
+
+                    <!-- Human Action Menu (Active in Human Action Phase) -->
+                    <div class="human-actions-panel hidden" id="human-actions-panel">
+                        <h2 class="panel-title">Infanterie-Aktionen</h2>
+                        <div class="action-list">
+                            <button id="btn-act-cylinder" class="btn-action" title="Zylinder angreifen in der aktuellen Zone">Zylinder angreifen</button>
+                            <button id="btn-act-earthworks" class="btn-action" title="Stellungen für Geschütze errichten">Stellungen bauen</button>
+                            <button id="btn-act-powdermill" class="btn-action" title="Pulvermühle platzieren (Zusatzschaden)">Pulvermühle bauen</button>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Center Area: Map View -->
+                <main class="map-view-container">
+                    <div class="map-wrapper" id="map-wrapper">
+                        <img src="assets/map.jpg" alt="England Strategic Map" class="map-bg">
+                        <!-- SVG overlay for rendering connections and click areas -->
+                        <svg class="map-svg-overlay" id="map-svg-overlay" viewBox="0 0 1000 862"></svg>
+                        
+                        <!-- Zones list positioned absolute on top -->
+                        <div class="zones-layer" id="zones-layer"></div>
+                    </div>
+                </main>
+
+                <!-- Right Sidebar: Battle Plans, Event log, and Wave Staging -->
+                <aside class="sidebar-right">
+                    <!-- Waves Staging Display -->
+                    <div class="staging-panel">
+                        <h2 class="panel-title">Marsianer-Wellen</h2>
+                        <div id="staging-list" class="staging-list">
+                            <!-- Populated dynamically: Wave 1 to 5 status -->
+                        </div>
+                    </div>
+
+                    <!-- Console/Log -->
+                    <div class="log-panel">
+                        <h2 class="panel-title">Gefechtsbericht</h2>
+                        <div id="log-content" class="log-content">
+                            <!-- Log messages go here -->
+                            <div class="log-msg system">Kriegszustand deklariert. Warte auf erste Zylinder-Landung.</div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: Tactical Board Screen (Land- und Seeschlachten) -->
+        <section id="screen-battle" class="screen">
+            <header class="battle-header">
+                <h2 id="battle-title">Taktische Schlacht</h2>
+                <div class="battle-stats">
+                    <div class="stat">Runde: <span id="battle-round">1</span></div>
+                    <div class="stat">Initiative: <span id="battle-initiative">-</span></div>
+                </div>
+                <div class="battle-plans-purchase">
+                    <span>Schlachtpläne kaufen:</span>
+                    <button id="btn-buy-plan-random" class="btn-small">Zufall (5 PP)</button>
+                    <button id="btn-buy-plan-choose" class="btn-small">Wahl (10 PP)</button>
+                </div>
+            </header>
+
+            <div class="battle-layout">
+                <!-- Battle Board Left: Land or Sea board depending on current battle -->
+                <div class="battle-board-container">
+                    <div class="battle-board-wrapper">
+                        <img src="assets/tactical_maps.jpg" alt="Tactical Boards" class="battle-board-bg" id="battle-board-bg-img">
+                        <!-- Active hex grid -->
+                        <svg class="battle-svg-overlay" id="battle-svg-overlay" viewBox="0 0 800 600"></svg>
+                        <div class="battle-units-layer" id="battle-units-layer"></div>
+                    </div>
+                </div>
+
+                <!-- Battle Sidebar Right: drawn cards, dice rolling, logs -->
+                <div class="battle-sidebar">
+                    <!-- Active Battle Plans -->
+                    <div class="battle-plans-panel">
+                        <h3>Aktive Schlachtpläne</h3>
+                        <div id="battle-plans-list" class="battle-plans-list">
+                            <!-- Purchased Battle Plans -->
+                        </div>
+                    </div>
+
+                    <!-- Active Battle Card drawn for Martians -->
+                    <div class="battle-card-panel">
+                        <h3>Gezogene Mars-Aktionskarte</h3>
+                        <div id="battle-card-display" class="battle-card-display empty">
+                            <div class="card-placeholder">Warte auf Zug...</div>
+                        </div>
+                    </div>
+
+                    <!-- Dice cup / Dice results -->
+                    <div class="battle-dice-panel">
+                        <h3>Custom Die</h3>
+                        <div class="dice-box">
+                            <div id="custom-die-visual" class="custom-die-visual green-side">?</div>
+                            <button id="btn-roll-battle-die" class="btn-primary">Würfeln</button>
+                        </div>
+                        <div id="roll-reason" class="roll-reason">Klicke zum Würfeln bei Aufforderung</div>
+                    </div>
+
+                    <!-- Battle Log -->
+                    <div class="battle-log-panel">
+                        <h3>Gefechtslog</h3>
+                        <div id="battle-log-content" class="battle-log-content"></div>
+                        <button id="btn-next-battle-step" class="btn-primary full-width">Nächster Schritt</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: Sieg / Niederlage -->
+        <section id="screen-gameover" class="screen">
+            <div class="gameover-container">
+                <h1 id="gameover-title">Sieg der Menschheit!</h1>
+                <p id="gameover-reason">Alle marsianischen Kräfte wurden vernichtet oder durch Erreger dahingerafft.</p>
+                
+                <div class="gameover-stats">
+                    <p>Spielrunden überlebt: <span id="go-stat-rounds">0</span></p>
+                    <p>Zerstörte Tripods: <span id="go-stat-tripods">0</span></p>
+                    <p>Gerettete Flüchtlinge: <span id="go-stat-refugees">0</span></p>
+                </div>
+
+                <button id="btn-restart" class="btn-primary">Zum Hauptmenü</button>
+            </div>
+        </section>
+
+        <!-- MODAL: Würfel-Animation -->
+        <div id="dice-modal" class="modal-overlay hidden">
+            <div class="dice-modal-content">
+                <h2>Würfelbecher schütteln...</h2>
+                <div class="dice-animation-container">
+                    <div class="dice-cube animate" id="anim-die">?</div>
+                </div>
+                <p id="dice-modal-text">Warte auf Wurf...</p>
+            </div>
+        </div>
+
+        <!-- MODAL: Eventkarte gezogen -->
+        <div id="event-modal" class="modal-overlay hidden">
+            <div class="event-card-modal">
+                <div class="event-card-header">EVENT-KARTE</div>
+                <div class="event-card-body">
+                    <h2 id="event-card-title">Karte Name</h2>
+                    <p id="event-card-desc">Beschreibung...</p>
+                    <div id="event-card-options" class="event-options-list">
+                        <!-- Options buttons generated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: Regeln -->
+        <div id="rules-modal" class="modal-overlay hidden">
+            <div class="rules-modal-content">
+                <h2>Spielanleitung & Hilfe</h2>
+                <div class="rules-scroll">
+                    <h3>Ziele des Spiels</h3>
+                    <p><strong>Menschlicher Sieg:</strong> Vernichte alle Tripods/Wellen und Zylinder auf der Karte ODER bringe deinen Germ-Track auf 10 (bzw. erfolgreicher Germ-Roll ab Stufe 7).</p>
+                    <p><strong>Marsianischer Sieg:</strong> Die Marsianer gewinnen sofort, falls London zerstört wird (Workforce = 0) ODER der Colonization-Track 10 erreicht (bzw. ab 7 erfolgreicher Wurf) ODER die Marsianer alle 4 Teile der Flugmaschine zusammengebaut haben.</p>
+
+                    <h3>Ablauf einer Runde</h3>
+                    <ol>
+                        <li><strong>PP sammeln & Einheiten kaufen:</strong> Erhalte PP für nicht zerstörte Zonen. Platziere Einheiten in Fabriken.</li>
+                        <li><strong>Tripod-Devastation:</strong> Wellen in Zonen verursachen Bevölkerungsschäden (senken Gears) und erzeugen Flüchtlinge.</li>
+                        <li><strong>Kämpfe:</strong> Schlachten finden in Zonen statt, in denen Marsianer und deine Artillerie gleichzeitig stehen.</li>
+                        <li><strong>Menschliche Aktionen:</strong> Jede deiner Einheiten kann sich 1 Zone bewegen. Infanterie in Zonen mit Zylindern kann diese angreifen, um Tripods im Bau zu zerstören.</li>
+                        <li><strong>Flucht & Zylinder:</strong> Flüchtlinge an Häfen rollen für die Evakuation. Neue Zylinder stürzen auf die Erde.</li>
+                        <li><strong>Marsianische Aktionen:</strong> AI-Tripods bewegen sich, reparieren sich oder bauen die Flugmaschine.</li>
+                        <li><strong>Assembly:</strong> Zylinder können sich in aktive Welle (4 Tripods) verwandeln, wenn der Würfelwurf die Handling-Machine-Farbe trifft.</li>
+                        <li><strong>Event ziehen:</strong> Eine Zufallskarte wird gezogen und beeinflusst das Spiel.</li>
+                    </ol>
+                </div>
+                <button id="btn-close-rules" class="btn-primary">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Game Scripts -->
+    <script type="module" src="js/ui.js"></script>
+</body>
+</html>

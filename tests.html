@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The War of the Worlds - Test Suite</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Share+Tech+Mono&family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #120e0c;
+            color: #eae0d5;
+            font-family: 'Alegreya', serif;
+            padding: 30px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #231c18;
+            border: 2px solid #c59b27;
+            padding: 25px;
+            border-radius: 6px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+        }
+        h1 {
+            font-family: 'Cinzel', serif;
+            color: #fff;
+            text-align: center;
+            border-bottom: 2px solid #a75525;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+            text-shadow: 0 0 8px rgba(197,155,39,0.3);
+        }
+        .test-card {
+            background: #1a1411;
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .test-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: #c59b27;
+        }
+        .test-desc {
+            font-size: 13px;
+            color: #b59f93;
+            margin-top: 3px;
+        }
+        .test-status {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            padding: 5px 12px;
+            border-radius: 3px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-pass {
+            background-color: rgba(0, 255, 102, 0.15);
+            color: #00ff66;
+            border: 1px solid #00ff66;
+        }
+        .status-fail {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        .results-summary {
+            margin-top: 25px;
+            padding: 15px;
+            background: #110c0a;
+            border: 1px solid #c59b27;
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #8f6916 0%, #b3861b 50%, #8f6916 100%);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 3px;
+            font-family: 'Cinzel', serif;
+            font-size: 13px;
+            border: 1px solid #c59b27;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AUTOMATISIERTE TEST-SUITE</h1>
+        
+        <div id="tests-list">
+            <!-- Tests results dynamically populated -->
+        </div>
+
+        <div class="results-summary" id="results-summary">
+            Führe Tests aus...
+        </div>
+
+        <div style="text-align: center;">
+            <a href="index.html" class="back-btn">Zurück zum Spiel</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { runTests } from "./js/tests/suite.js";
+        
+        window.addEventListener("DOMContentLoaded", () => {
+            const results = runTests();
+            const listEl = document.getElementById("tests-list");
+            const summaryEl = document.getElementById("results-summary");
+            
+            listEl.innerHTML = "";
+            let passedCount = 0;
+            
+            results.forEach(t => {
+                const card = document.createElement("div");
+                card.className = "test-card";
+                
+                const info = document.createElement("div");
+                info.className = "test-info";
+                
+                const name = document.createElement("span");
+                name.className = "test-name";
+                name.textContent = t.name;
+                info.appendChild(name);
+                
+                const desc = document.createElement("span");
+                desc.className = "test-desc";
+                desc.textContent = t.message || "Test erfolgreich abgeschlossen.";
+                info.appendChild(desc);
+                card.appendChild(info);
+                
+                const status = document.createElement("span");
+                status.className = `test-status ${t.passed ? 'status-pass' : 'status-fail'}`;
+                status.textContent = t.passed ? "Pass" : "Fail";
+                card.appendChild(status);
+                
+                listEl.appendChild(card);
+                if (t.passed) passedCount++;
+            });
+            
+            const total = results.length;
+            summaryEl.innerHTML = passedCount === total 
+                ? `<span style="color:#00ff66;">ALLE TESTS ERFOLGREICH (${passedCount}/${total})</span>`
+                : `<span style="color:#ef4444;">TESTS FEHLGESCHLAGEN (${passedCount}/${total} bestanden)</span>`;
+        });
+    </script>
+</body>
+</html>
