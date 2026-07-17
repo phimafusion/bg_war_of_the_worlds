@@ -162,13 +162,15 @@ export class GameState {
         if (this.phase === "production") {
             // 1. Calculate production PP from gears
             let producedPP = 0;
+            const details = [];
             for (const [name, zone] of Object.entries(this.map.zones)) {
                 if (!zone.destroyed) {
                     producedPP += zone.gears;
+                    details.push(`${name} (+${zone.gears} PP)`);
                 }
             }
             this.pp += producedPP;
-            this.log(`Einkommensphase: +${producedPP} PP aus aktiven Industrie-Zonen.`, "human");
+            this.log(`Einkommensphase: +${producedPP} PP gesamt. Aufteilung: ${details.join(", ")}`, "human");
         } 
         else if (this.phase === "devastation") {
             this.executeDevastationPhase();
@@ -289,6 +291,9 @@ export class GameState {
                     this.addHumanVp(-1);
                 }
             }
+
+            // Log updated status of the zone
+            this.log(`Status für ${zoneName}: Gears = ${zone.gears}/${zone.maxGears}, Flüchtlinge = ${zone.refugees1 + zone.refugees2} (Typ 1: ${zone.refugees1}, Typ 2: ${zone.refugees2})`, "system");
         }
 
         // Auto transition to next phase after short delay (let user read logs)
@@ -427,6 +432,8 @@ export class GameState {
                 
                 if (roll === hmColor) {
                     assembledIndices.push(idx);
+                } else {
+                    this.log(`Montage in ${cyl.zoneName} fehlgeschlagen (Würfel ${roll.toUpperCase()} stimmt nicht mit Handling Machine ${hmColor.toUpperCase()} überein).`, "system");
                 }
             }
         });
