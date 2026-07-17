@@ -59,11 +59,13 @@ body {
     background-color: var(--bg-dark);
     display: flex;
     flex-direction: column;
+    z-index: 1;
 }
 
 .screen.active {
     opacity: 1;
     pointer-events: auto;
+    z-index: 5;
 }
 
 /* ==========================================================================
